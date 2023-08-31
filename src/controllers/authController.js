@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 
 
 const authController = {
+    // register
     async register(req, res) {
         const {username, email, password} = req.body; 
 
@@ -37,10 +38,32 @@ const authController = {
         return res.json({"msg" : `JWT generated token ${token}`});
     },
 
-    login(req, res) {
-        return res.json({"msg" : "login endpoint"});
+    // login
+    async login(req, res) {
+        try {
+            const {email, password} = req.body;
+        const user  = await prisma.user.findFirst({
+            where: {
+                email
+            }
+        })
+
+        if(!user) {
+            res.status(401).json({error: 'Invalid username or email!'})
+        }
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+          return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        const token = await authController.generateToken(user);
+        res.json({message: 'login successfull!', token});
+        } catch (err) {
+            res.status(500).json({error: 'Internal server error'});
+        }
+        
     },
 
+    // logout
     logout(req, res) {
         return res.json({"msg" : "logout endpoint"});
     },
